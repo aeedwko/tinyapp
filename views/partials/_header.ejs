@@ -16,11 +16,17 @@
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-        <%= username %>
-        <form action="/login" method="POST">
-          <input type="text" name="username" placeholder="Username" />
-          <button type="submit" class="btn btn-outline-secondary">Login</button>
-        </form>
+        <% if (!username) { %>
+          <form action="/login" method="POST">
+            <input type="text" name="username" placeholder="Username" />
+            <button type="submit" class="btn btn-outline-secondary">Login</button>
+          </form>
+        <% } else { %>
+          <form action="/logout" method="POST">
+            Logged in as: <%= username %>
+            <button type="submit" class="btn btn-outline-warning">Logout</button>
+          </form>
+        <% } %>
       </div>
     </div>
   </nav>
