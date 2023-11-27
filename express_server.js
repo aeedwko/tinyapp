@@ -64,6 +64,11 @@ app.post("/urls/:id", (req, res) => {
   res.redirect(`/urls`);
 });
 
+app.post("/login", (req, res) => {
+  res.cookie("username", req.body.username);
+  res.redirect(`/urls`);
+});
+
 const generateRandomString = () => {
   const alphanumericChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let str = "";
