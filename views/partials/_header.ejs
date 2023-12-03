@@ -17,10 +17,8 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
         <% if (users[user_id] == undefined) { %>
-          <form action="/login" method="POST">
-            <input type="text" name="email" placeholder="Email" />
-            <button type="submit" class="btn btn-outline-secondary">Login</button>
-          </form>
+          <a class="nav-item nav-link" href="/login">Login</a>
+          <a class="nav-item nav-link" href="/register">Register</a>
         <% } else { %>
           <form action="/logout" method="POST">
             Logged in as: <%= users[user_id].email %>
