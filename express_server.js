@@ -19,10 +19,23 @@ const users = {
 };
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
+  aaaa: {
+    longURL: "test1",
+    userID: "test",
+  },
+  bbbb: {
+    longURL: "test2",
+    userID: "test",
+  }
 };
-
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
@@ -43,64 +56,111 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    res.status(401).send("Please login or register to view this page.");
+  }
   const templateVars = {
     user_id: req.cookies["user_id"],
     users: users,
-    urls: urlDatabase
+    urls: urlsForUser(req.cookies["user_id"])
   };
+  
   res.render("urls_index", templateVars);
 });
 
 app.post("/urls", (req, res) => {
   console.log(req.body); // Log the POST request body to the console
 
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
-  res.redirect(`/urls/${shortURL}`);
+  if (!req.cookies["user_id"]) {
+    res.status(401).send("You are not logged in to perform this action.\n");
+  } else {
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = {
+      longURL: req.body.longURL,
+      userID: req.cookies["user_id"]
+    };
+    res.redirect(`/urls/${shortURL}`);
+  }
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    user_id: req.cookies["user_id"],
-    users: users
-  };
-
-  res.render("urls_new", templateVars);
+  if (!req.cookies["user_id"]) {
+    res.redirect(`/login`);
+  } else {
+    const templateVars = {
+      user_id: req.cookies["user_id"],
+      users: users
+    };
+  
+    res.render("urls_new", templateVars);
+  }
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = {
-    user_id: req.cookies["user_id"],
-    users: users,
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id]
-  };
-  res.render("urls_show", templateVars);
+  
+  if (!req.cookies["user_id"]) {
+    res.status(401).send("You are not logged in to access this URL");
+  } else if (urlDatabase[req.params.id].userID !== req.cookies["user_id"]) {
+    res.status(401).send("You are unauthorized to access this URL");
+  } else {
+    const templateVars = {
+      user_id: req.cookies["user_id"],
+      users: users,
+      id: req.params.id,
+      longURL: urlDatabase[req.params.id].longURL
+    };
+    res.render("urls_show", templateVars);
+  }
 });
 
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect(`/urls`);
+  if (!urlDatabase[req.params.id]) {
+    res.status(400).send("ID does not exist\n");
+  } else if (!req.cookies["user_id"]) {
+    res.status(401).send("You are not logged in to access this URL\n");
+  } else if (urlDatabase[req.params.id].userID !== req.cookies["user_id"]) {
+    res.status(401).send("You are unauthorized to access this URL\n");
+  } else {
+    urlDatabase[req.params.id].longURL = req.body.longURL;
+    res.redirect(`/urls`);
+  }
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect(`/urls`);
+  if (!urlDatabase[req.params.id]) {
+    res.status(400).send("ID does not exist\n");
+  } else if (!req.cookies["user_id"]) {
+    res.status(401).send("You are not logged in to access this URL\n");
+  } else if (urlDatabase[req.params.id].userID !== req.cookies["user_id"]) {
+    res.status(401).send("You are unauthorized to access this URL\n");
+  } else {
+    delete urlDatabase[req.params.id];
+    res.redirect(`/urls`);
+  }
 });
 
 // redirects to the long URL
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id];
-  res.redirect(longURL);
+  if (urlDatabase[req.params.id]) {
+    const longURL = urlDatabase[req.params.id].longURL;
+    res.redirect(longURL);
+  } else {
+    res.status(400).send("id does not exist");
+  }
 });
 
-
 app.get("/login", (req, res) => {
-  const templateVars = {
-    user_id: req.cookies["user_id"],
-    users: users
-  };
-  res.render(`login`, templateVars);
+  // if the cookie exists (user is logged in)
+  if (req.cookies["user_id"]) {
+    res.redirect(`/urls`);
+  } else {
+    const templateVars = {
+      user_id: req.cookies["user_id"],
+      users: users
+    };
+
+    res.render(`login`, templateVars);
+  }
 });
 
 app.post("/login", (req, res) => {
@@ -123,12 +183,17 @@ app.post("/logout", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const templateVars = {
-    user_id: req.cookies["user_id"],
-    users: users
-  };
-
-  res.render("register", templateVars);
+  // if the cookie exists (user is logged in)
+  if (req.cookies["user_id"]) {
+    res.redirect(`/urls`);
+  } else {
+    const templateVars = {
+      user_id: req.cookies["user_id"],
+      users: users
+    };
+  
+    res.render("register", templateVars);
+  }
 });
 
 app.post("/register", (req, res) => {
@@ -178,4 +243,19 @@ const getUserByEmail = (email) => {
   }
 
   return null;
+};
+
+// returns the URLs where the userID is equal to the id of the currently logged-in user
+const urlsForUser = (id) => {
+  const urls = { };
+  for (const url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      urls[url] = {
+        longURL: urlDatabase[url].longURL,
+        userID: urlDatabase[url].userID
+      };
+    }
+  }
+
+  return urls;
 };
