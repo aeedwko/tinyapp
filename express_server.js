@@ -1,5 +1,6 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
+const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -58,14 +59,15 @@ app.get("/hello", (req, res) => {
 app.get("/urls", (req, res) => {
   if (!req.cookies["user_id"]) {
     res.status(401).send("Please login or register to view this page.");
+  } else {
+    const templateVars = {
+      user_id: req.cookies["user_id"],
+      users: users,
+      urls: urlsForUser(req.cookies["user_id"])
+    };
+    
+    res.render("urls_index", templateVars);
   }
-  const templateVars = {
-    user_id: req.cookies["user_id"],
-    users: users,
-    urls: urlsForUser(req.cookies["user_id"])
-  };
-  
-  res.render("urls_index", templateVars);
 });
 
 app.post("/urls", (req, res) => {
@@ -165,16 +167,15 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const user = getUserByEmail(req.body.email);
-  if (user) {
-    if (user.password === req.body.password) {
-      res.cookie("user_id", user.id);
-      res.redirect(`/urls`);
-    }
 
+  if (!user) {
+    res.status(403).send("Email cannot be found");
+  } else if (!bcrypt.compareSync(req.body.password, user.password)) {
     res.status(403).send("Incorrect password");
+  } else {
+    res.cookie("user_id", user.id);
+    res.redirect(`/urls`);
   }
-
-  res.status(403).send("Email cannot be found");
 });
 
 app.post("/logout", (req, res) => {
@@ -199,24 +200,23 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   if (req.body.email.length === 0 || req.body.password.length === 0) {
     res.status(400).send("At least one of the fields is empty");
-  }
-
-  if (getUserByEmail(req.body.email)) {
+  } else if (getUserByEmail(req.body.email)) {
     res.status(400).send("The email already exists");
+  } else {
+    const id = generateRandomString();
+    res.cookie("user_id", id);
+    
+    const hashedPassword = bcrypt.hashSync(req.body.password, 10);
+    console.log(hashedPassword);
+
+    users[id] = {
+      id: id,
+      email: req.body.email,
+      password: hashedPassword
+    };
+    
+    res.redirect("/urls");
   }
-
-  const id = generateRandomString();
-  res.cookie("user_id", id);
-
-  users[id] = {
-    id: id,
-    email: req.body.email,
-    password: req.body.password
-  };
-  
-  console.log("After: " + Object.keys(users));
-  
-  res.redirect("/urls");
 });
 
 
