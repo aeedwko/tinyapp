@@ -14,16 +14,16 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
       <div class="navbar-nav">
-        <a class="nav-item nav-link" href="/urls">My URLs</a>
-        <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
         <% if (users[user_id] == undefined) { %>
           <a class="nav-item nav-link" href="/login">Login</a>
           <a class="nav-item nav-link" href="/register">Register</a>
         <% } else { %>
+          <a class="nav-item nav-link" href="/urls">My URLs</a>
+          <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
           <form action="/logout" method="POST">
             Logged in as: <%= users[user_id].email %>
             <button type="submit" class="btn btn-outline-warning">Logout</button>
-          </form> <!-- REFACTOR THIS AND USE ANCHOR HREF TO /LOGOUT ??? -->
+          </form>
         <% } %>
       </div>
     </div>
