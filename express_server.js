@@ -1,35 +1,46 @@
+// require necessary modules
 const express = require("express");
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
+
+// require helper functions
+const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers");
+
+// create express application
 const app = express();
 const PORT = 8080; // default port 8080
 
-const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers");
-
+// two empty objects to store user and url data 
 const users = {};
 const urlDatabase = {};
 
+// set template engine to ejs 
 app.set("view engine", "ejs");
 
+// listen for connections on PORT 
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}!`);
 });
 
+// middleware for parsing request body
 app.use(express.urlencoded({ extended: true }));
 
+// middleware for adding a session property to the req object 
+// keys property used for signing and verifying cookie values 
+// maxAge specifies when the cookie expires
 app.use(cookieSession({
   name: 'session',
   keys: ["Intestine", "Stomach"],
-
-  // Cookie Options
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 
+// handles root path to redirect user
 app.get("/", (req, res) => {
   !req.session["user_id"] ? res.redirect(`/login`) : res.redirect(`/urls`);
 });
 
-// page showing a list of the URLs the user has created
+// shows list of the URLs the user has created
+// returns error message if not logged in 
 app.get("/urls", (req, res) => {
   if (!req.session["user_id"]) {
     return res.status(401).send("Please login to view this page.");
@@ -44,7 +55,8 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-// page for creating a new URL
+// renders page for creating new short url 
+// redirects user to login page if not logged in 
 app.get("/urls/new", (req, res) => {
   if (!req.session["user_id"]) {
     res.redirect(`/login`);
@@ -58,7 +70,8 @@ app.get("/urls/new", (req, res) => {
   }
 });
 
-// page for editing the long URL
+// renders page for editing long url
+// returns appropriate error message if url's id doesn't exist, user not logged in, or if user doesn't own the url's id
 app.get("/urls/:id", (req, res) => {
   if (!urlDatabase[req.params.id]) {
     return res.status(400).send("ID does not exist\n");
@@ -80,7 +93,8 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-// redirects to the long URL
+// redirects user to long url
+// returns error message if url id doesn't exist 
 app.get("/u/:id", (req, res) => {
   if (!urlDatabase[req.params.id]) {
     return res.status(400).send("The URL for the given ID does not exist.\n");
@@ -90,7 +104,9 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
-// creates the short URL
+// creates short url with generateRandomString helper function 
+// redirects user to short url path
+// returns error message if user not logged in
 app.post("/urls", (req, res) => {
   if (!req.session["user_id"]) {
     return res.status(401).send("You are not logged in to perform this action.\n");
@@ -105,7 +121,8 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-// updates the long URL
+// updates the long url and redirects to /urls path 
+// returns appropriate error message if url's id doesn't exist, user not logged in, or if user doesn't own the url's id
 app.post("/urls/:id", (req, res) => {
   if (!urlDatabase[req.params.id]) {
     return res.status(400).send("ID does not exist\n");
@@ -121,7 +138,8 @@ app.post("/urls/:id", (req, res) => {
   res.redirect(`/urls`);
 });
 
-// deletes the short URL
+// deletes the short url and redirects to /urls path
+// returns appropriate error message if url's id doesn't exist, user not logged in, or if user doesn't own the url's id
 app.post("/urls/:id/delete", (req, res) => {
   if (!urlDatabase[req.params.id]) {
     return res.status(400).send("ID does not exist\n");
@@ -137,7 +155,8 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect(`/urls`);
 });
 
-// login page
+// renders login page 
+// redirects user to /urls path if already logged in 
 app.get("/login", (req, res) => {
   if (req.session["user_id"]) {
     res.redirect(`/urls`);
@@ -151,9 +170,9 @@ app.get("/login", (req, res) => {
   }
 });
 
-// register page
+// renders register page
+// redirects user to /urls path if already logged in
 app.get("/register", (req, res) => {
-  // if the cookie exists (user is logged in)
   if (req.session["user_id"]) {
     res.redirect(`/urls`);
   } else {
@@ -166,7 +185,8 @@ app.get("/register", (req, res) => {
   }
 });
 
-// logs the user in with a valid email and password
+// redirects to /urls path with a valid email and password
+// returns appropriate error message if email or password is incorrect
 app.post("/login", (req, res) => {
   const user = getUserByEmail(req.body.email, users);
 
@@ -181,7 +201,8 @@ app.post("/login", (req, res) => {
   res.redirect(`/urls`);
 });
 
-// registers the user with an email and hashed password
+// registers the user with an email and hashed password and redirects to /urls path
+// returns appropriate error message if missing field or if email already exists 
 app.post("/register", (req, res) => {
   if (req.body.email.length === 0 || req.body.password.length === 0) {
     return res.status(400).send("The email and/or password fields are empty");
@@ -205,6 +226,7 @@ app.post("/register", (req, res) => {
 });
 
 // logs user out and deletes cookie
+// redirects to login path 
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect(`/login`);

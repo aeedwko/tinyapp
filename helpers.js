@@ -1,4 +1,4 @@
-// returns either the user object or null if not found in database
+// returns either the user object or undefined if not found in database
 const getUserByEmail = (email, database) => {
   for (const user_id in database) {
     if (database[user_id].email === email) {
@@ -9,6 +9,7 @@ const getUserByEmail = (email, database) => {
   return undefined;
 };
 
+// generate a random string of 6 alphanumeric characters 
 const generateRandomString = () => {
   const alphanumericChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let str = "";
@@ -23,7 +24,7 @@ const generateRandomString = () => {
   return str;
 };
 
-// returns the URLs where the userID is equal to the id of the currently logged-in user
+// returns the urls where the userID is equal to the id of the currently logged-in user
 const urlsForUser = (id, database) => {
   const urls = { };
   for (const url in database) {
