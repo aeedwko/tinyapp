@@ -9,7 +9,7 @@ const getUserByEmail = (email, database) => {
   return undefined;
 };
 
-// generate a random string of 6 alphanumeric characters 
+// generate a random string of 6 alphanumeric characters
 const generateRandomString = () => {
   const alphanumericChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let str = "";
